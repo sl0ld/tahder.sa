@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>اختبار إضافة تحضيري</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+      body { margin: 0; background-color: #f7fcfd; background-image: linear-gradient(rgba(55,135,109,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(55,135,109,.06) 1px,transparent 1px); background-size: 26px 26px; color: #153d38; font-family: "Alexandria", Tahoma, Arial, sans-serif; }
+      header { background: linear-gradient(135deg,#0d8f7d,#087364); color: #fff; padding: 18px 24px; font-weight: 900; }
+      main { max-width: 900px; margin: 24px auto; padding: 0 18px; }
+      .lesson { margin-bottom: 16px; border: 1px solid #d9e8e1; border-radius: 14px; background: rgba(255,255,255,.94); padding: 16px; box-shadow: 0 8px 20px rgba(16,59,74,.06); }
+      .grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+      label { color: #47746b; font-size: 13px; font-weight: 900; }
+      textarea { width: 100%; min-height: 110px; margin-top: 6px; border: 1px solid #d9e8e1; border-radius: 10px; padding: 10px; box-sizing: border-box; background: rgba(255,255,255,.92); color:#153d38; font-family: inherit; }
+      @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <header>
+      محاكاة صفحة تحضير درس داخل منصة مدرستي
+      <span id="extension-state">جاري التحقق من الإكستنشن...</span>
+    </header>
+    <main>
+      <section class="lesson">
+        <h1>لغتي الجميلة · الصف الخامس</h1>
+        <p>درس تجريبي: أنامل أضاءت طريق أصحابها</p>
+      </section>
+      <section class="grid">
+        <label>الأهداف<textarea id="lesson-objectives" placeholder="الأهداف"></textarea></label>
+        <label>الاستراتيجيات<textarea id="lesson-strategies" placeholder="الاستراتيجيات"></textarea></label>
+        <label>الوسائل والمصادر<textarea id="lesson-resources" placeholder="الوسائل والمصادر"></textarea></label>
+        <label>الإغلاق والتقويم<textarea id="lesson-closure" placeholder="الإغلاق والتقويم"></textarea></label>
+        <label>الإثراءات<textarea id="lesson-enrichment" placeholder="الإثراءات"></textarea></label>
+        <label>الواجب<textarea id="lesson-assignment" placeholder="الواجب"></textarea></label>
+        <label>التلميحات<textarea id="lesson-hints" placeholder="التلميحات"></textarea></label>
+        <label>الأنشطة المدرسية<textarea id="lesson-activities" placeholder="الأنشطة المدرسية"></textarea></label>
+      </section>
+    </main>
+    <script src="content-script.js"></script>
+    <script>
+      const extensionState = document.getElementById('extension-state');
+      const extensionActive = document.documentElement.dataset.tahderExtension === 'active';
+      extensionState.textContent = extensionActive ? 'الإكستنشن يعمل' : 'الإكستنشن غير مفعل';
+      extensionState.style.cssText = 'display:inline-block;margin-right:12px;border-radius:999px;background:' +
+        (extensionActive ? '#d9f6ed;color:#087364' : '#fff1d1;color:#956100') +
+        ';font-size:11px;padding:6px 10px;';
+    </script>
+  </body>
+</html>

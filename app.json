@@ -1,0 +1,11 @@
+{
+  "expo": {
+    "name": "Tahder",
+    "slug": "tahder-mobile",
+    "scheme": "tahder",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "jsEngine": "hermes"
+  }
+}

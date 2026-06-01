@@ -1,0 +1,376 @@
+#tahder-madrasati-assistant {
+  --tahder-ink: #153d38;
+  --tahder-muted: #657c76;
+  --tahder-line: #d9e8e1;
+  --tahder-mint: #0a927f;
+  --tahder-mint-dark: #087364;
+  --tahder-mint-soft: #e6f8f3;
+  --tahder-accent: #10a69a;
+  --tahder-accent-soft: #e2f7f4;
+  --tahder-sand: #fff5d8;
+  --tahder-sand-dark: #ae7417;
+  --tahder-rose-soft: #fcebea;
+  --tahder-rose: #b65d56;
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 2147483647;
+  color: var(--tahder-ink);
+  direction: rtl;
+  font-family: "Alexandria", Tahoma, Arial, sans-serif;
+}
+
+#tahder-madrasati-assistant * {
+  box-sizing: border-box;
+}
+
+#tahder-madrasati-assistant button {
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+#tahder-madrasati-assistant .tahder-toolbar {
+  width: min(320px, calc(100vw - 32px));
+  border: 1px solid rgba(19, 80, 76, 0.14);
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 20px 48px rgba(16, 59, 74, 0.18);
+  overflow: hidden;
+}
+
+#tahder-madrasati-assistant .tahder-full-panel {
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+}
+
+#tahder-madrasati-assistant .tahder-toolbar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: linear-gradient(135deg, #0d8f7d, #087364);
+  color: #ffffff;
+  padding: 13px;
+}
+
+#tahder-madrasati-assistant .tahder-brand-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 9px;
+}
+
+#tahder-madrasati-assistant .tahder-brand-row > div {
+  min-width: 0;
+}
+
+#tahder-madrasati-assistant .tahder-brand-mark {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+#tahder-madrasati-assistant .tahder-toolbar-header strong,
+#tahder-madrasati-assistant .tahder-toolbar-header small {
+  display: block;
+}
+
+#tahder-madrasati-assistant .tahder-toolbar-header strong {
+  font-size: 16px;
+}
+
+#tahder-madrasati-assistant .tahder-toolbar-header small {
+  max-width: 235px;
+  margin-top: 4px;
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 11px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#tahder-madrasati-assistant .tahder-ready-dot {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.66);
+  border-radius: 50%;
+  background: #64e4bc;
+}
+
+#tahder-madrasati-assistant .tahder-lock-badge,
+#tahder-madrasati-assistant .tahder-signout {
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 7px 8px;
+}
+
+#tahder-madrasati-assistant .tahder-login-form {
+  padding: 12px 10px 10px;
+}
+
+#tahder-madrasati-assistant .tahder-login-form label {
+  display: block;
+  margin-bottom: 9px;
+}
+
+#tahder-madrasati-assistant .tahder-login-form label span {
+  display: block;
+  margin-bottom: 5px;
+  color: #47746b;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+#tahder-madrasati-assistant .tahder-login-form input {
+  width: 100%;
+  border: 1px solid var(--tahder-line);
+  border-radius: 9px;
+  color: var(--tahder-ink);
+  font-family: inherit;
+  font-size: 12px;
+  outline: none;
+  padding: 9px;
+}
+
+#tahder-madrasati-assistant .tahder-login-form input:focus {
+  border-color: var(--tahder-mint);
+  box-shadow: 0 0 0 3px rgba(10, 146, 127, 0.1);
+}
+
+#tahder-madrasati-assistant .tahder-login-form .tahder-primary-action {
+  width: 100%;
+  margin: 4px 0 7px;
+}
+
+#tahder-madrasati-assistant .tahder-login-note {
+  display: block;
+  color: var(--tahder-muted);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.55;
+  text-align: center;
+}
+
+#tahder-madrasati-assistant .tahder-subscription-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px solid var(--tahder-line);
+  color: var(--tahder-muted);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 8px 10px;
+}
+
+#tahder-madrasati-assistant .tahder-subscription-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#tahder-madrasati-assistant .tahder-subscription-row b {
+  color: var(--tahder-mint-dark);
+  white-space: nowrap;
+}
+
+#tahder-madrasati-assistant .tahder-status {
+  margin: 10px 10px 6px;
+  border-radius: 10px;
+  background: #f3f8f8;
+  color: var(--tahder-muted);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.55;
+  padding: 8px 9px;
+}
+
+#tahder-madrasati-assistant .tahder-status[data-tone="success"] {
+  background: var(--tahder-mint-soft);
+  color: var(--tahder-mint-dark);
+}
+
+#tahder-madrasati-assistant .tahder-status[data-tone="warn"] {
+  background: #fff8e7;
+  color: #956100;
+}
+
+#tahder-madrasati-assistant .tahder-primary-action {
+  width: calc(100% - 20px);
+  min-height: 42px;
+  margin: 4px 10px 8px;
+  border-radius: 11px;
+  background: var(--tahder-mint);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+#tahder-madrasati-assistant .tahder-primary-action:hover {
+  background: var(--tahder-mint-dark);
+}
+
+#tahder-madrasati-assistant .tahder-secondary-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  border-top: 1px solid var(--tahder-line);
+  padding: 9px;
+}
+
+#tahder-madrasati-assistant .tahder-secondary-actions button {
+  min-height: 34px;
+  border-radius: 8px;
+  background: #f5fafa;
+  color: #47746b;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 5px 3px;
+}
+
+#tahder-madrasati-assistant .tahder-secondary-actions button:hover {
+  background: var(--tahder-mint-soft);
+  color: var(--tahder-mint-dark);
+}
+
+#tahder-madrasati-assistant .tahder-section {
+  margin: 8px 10px;
+  overflow: hidden;
+  border: 1px solid var(--tahder-line);
+  border-radius: 11px;
+  background: #ffffff;
+}
+
+#tahder-madrasati-assistant .tahder-section summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--tahder-ink);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 900;
+  list-style: none;
+  padding: 10px;
+}
+
+#tahder-madrasati-assistant .tahder-section summary::-webkit-details-marker {
+  display: none;
+}
+
+#tahder-madrasati-assistant .tahder-section summary span {
+  display: grid;
+  width: 21px;
+  height: 21px;
+  place-items: center;
+  border-radius: 7px;
+  background: var(--tahder-mint-soft);
+  color: var(--tahder-mint);
+  font-size: 14px;
+}
+
+#tahder-madrasati-assistant .tahder-section:nth-of-type(2) summary span {
+  background: var(--tahder-sand);
+  color: var(--tahder-sand-dark);
+}
+
+#tahder-madrasati-assistant .tahder-section:nth-of-type(3) summary span {
+  background: var(--tahder-accent-soft);
+  color: var(--tahder-accent);
+}
+
+#tahder-madrasati-assistant .tahder-section:nth-of-type(4) summary span {
+  background: var(--tahder-rose-soft);
+  color: var(--tahder-rose);
+}
+
+#tahder-madrasati-assistant .tahder-section[open] summary {
+  border-bottom: 1px solid var(--tahder-line);
+}
+
+#tahder-madrasati-assistant .tahder-section[open] summary span {
+  transform: rotate(45deg);
+}
+
+#tahder-madrasati-assistant .tahder-section-body {
+  padding: 9px;
+}
+
+#tahder-madrasati-assistant .tahder-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+#tahder-madrasati-assistant .tahder-grid button {
+  min-height: 42px;
+  border: 1px solid #d9e9ea;
+  border-radius: 8px;
+  background: #f9fcfc;
+  color: #47746b;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1.45;
+  padding: 6px 4px;
+}
+
+#tahder-madrasati-assistant .tahder-grid button:hover {
+  background: var(--tahder-mint-soft);
+  color: var(--tahder-mint-dark);
+}
+
+#tahder-madrasati-assistant .tahder-editor-field {
+  display: block;
+  margin-bottom: 8px;
+}
+
+#tahder-madrasati-assistant .tahder-editor-field span {
+  display: block;
+  margin-bottom: 4px;
+  color: #47746b;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+#tahder-madrasati-assistant .tahder-editor-field textarea {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid var(--tahder-line);
+  border-radius: 8px;
+  color: var(--tahder-ink);
+  font-family: inherit;
+  font-size: 10px;
+  line-height: 1.55;
+  outline: none;
+  padding: 7px;
+}
+
+#tahder-madrasati-assistant .tahder-wide-button {
+  width: 100%;
+  border-radius: 8px;
+  background: var(--tahder-mint);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 10px;
+}
+
+#tahder-madrasati-assistant .tahder-footer {
+  color: var(--tahder-muted);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 4px 10px 12px;
+  text-align: center;
+}
