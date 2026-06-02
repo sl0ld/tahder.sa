@@ -46,10 +46,24 @@
         ...options.headers,
       },
     });
-    const body = response.status === 204 ? null : await response.json();
+    const body = await parseResponse(response);
 
     if (!response.ok) throw new Error(body?.error_description || body?.message || body?.error || 'تعذر الاتصال بالخادم.');
     return body;
+  }
+
+  async function parseResponse(response) {
+    const text = await response.text();
+
+    if (!text) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(text);
+    } catch {
+      return { message: text };
+    }
   }
 
   async function signIn(email, password) {
@@ -172,4 +186,3 @@
     signOut,
   };
 })(globalThis);
-
