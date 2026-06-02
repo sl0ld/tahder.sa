@@ -1,0 +1,37 @@
+name: Publish public website
+
+on:
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out private source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Build safe public copy
+        run: npm run site:build-public
+
+      - name: Check out public deployment repository
+        uses: actions/checkout@v4
+        with:
+          repository: sl0ld/tahder-site-public
+          token: ${{ secrets.PUBLIC_SITE_TOKEN }}
+          path: public-repository
+
+      - name: Publish generated files only
+        run: |
+          find public-repository -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -R public-site-dist/. public-repository/
+          cd public-repository
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add --all
+          git diff --cached --quiet || git commit -m "Publish website"
+          git push
