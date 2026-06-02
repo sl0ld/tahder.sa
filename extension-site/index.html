@@ -51,27 +51,25 @@
 
           <div class="extension-preview" aria-label="معاينة الإضافة">
             <div class="preview-top">
+              <button class="preview-exit" type="button">خروج</button>
               <div>
                 <strong>تحضيري</strong>
-                <small>أنامل أضاءت طريق أصحابها</small>
+                <small>لغتي الجميلة · الصف الخامس درس تجريبي</small>
               </div>
-              <span class="live-dot"></span>
+              <span class="preview-brand">ت</span>
             </div>
             <div class="account-line">
               <span>teacher@tahder.sa</span>
               <b>اشتراك فعال</b>
             </div>
-            <p class="preview-status">تم اكتشاف صفحة التحضير</p>
             <button class="preview-main" type="button">تعبئة التحضير تلقائياً</button>
-            <div class="preview-card">
-              <div class="preview-card-title">التحضير الشامل <span>+</span></div>
-              <div class="preview-grid">
-                <span>الحصة الحالية</span>
-                <span>تحضير الأسبوع</span>
-                <span>نسخ للفصول</span>
-                <span>حفظ التحضير</span>
-              </div>
+            <div class="preview-menu">
+              <span>التحضير الشامل <i>‹</i></span>
+              <span>تعديل وبنك ومشاركة <i>‹</i></span>
+              <span>الواجبات والإثراءات <i>‹</i></span>
+              <span>تقاريري وخطة الإنجاز <i>‹</i></span>
             </div>
+            <small class="preview-footer">نسخة تجريبية محلية · لا نرسل بيانات الدخول</small>
           </div>
         </section>
 
@@ -171,6 +169,7 @@
         <p class="eyebrow">حساب تحضيري</p>
         <h2>سجّل دخولك</h2>
         <p>حالياً يمكنك استخدام أي بريد وكلمة مرور لتجربة الواجهة.</p>
+        <p class="login-error" id="login-error" hidden></p>
         <label>
           <span>البريد الإلكتروني</span>
           <input name="email" type="email" placeholder="teacher@example.com" required>
@@ -182,6 +181,8 @@
         <button class="primary-button full-button" value="default" type="submit">تسجيل الدخول</button>
       </form>
     </div>
+    <script src="config.js"></script>
+    <script src="supabase-client.js"></script>
     <script src="site.js"></script>
   </body>
 </html>

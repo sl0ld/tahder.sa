@@ -1,0 +1,44 @@
+{
+  "documents": [
+    {
+      "id": "moe-teacher-guidance",
+      "title": "الدليل الإرشادي للمعلم",
+      "document_type": "teacher_guidance",
+      "curriculum_year": "1447",
+      "stage": "general",
+      "grade": null,
+      "term": null,
+      "subject": null,
+      "version": "1",
+      "updated_at": "2026-06-02",
+      "local_path": "files/1447/general/teacher-guides/teacher-guidance.pdf"
+    },
+    {
+      "id": "arabic-grade-5-term-2-student-book",
+      "title": "لغتي الجميلة - الصف الخامس - الفصل الثاني",
+      "document_type": "student_book",
+      "curriculum_year": "1447",
+      "stage": "primary",
+      "grade": "الصف الخامس",
+      "term": "الفصل الثاني",
+      "subject": "لغتي الجميلة",
+      "version": "1",
+      "updated_at": "2026-06-02",
+      "local_path": "files/1447/primary/grade-5/term-2/arabic/student-book.pdf"
+    },
+    {
+      "id": "arabic-grade-5-term-2-teacher-guide",
+      "title": "دليل معلم لغتي الجميلة - الصف الخامس - الفصل الثاني",
+      "document_type": "teacher_guide",
+      "curriculum_year": "1447",
+      "stage": "primary",
+      "grade": "الصف الخامس",
+      "term": "الفصل الثاني",
+      "subject": "لغتي الجميلة",
+      "version": "1",
+      "updated_at": "2026-06-02",
+      "local_path": "files/1447/primary/grade-5/term-2/arabic/teacher-guide.pdf"
+    }
+  ]
+}
+

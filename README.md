@@ -568,3 +568,86 @@ npm run dev
 ```bash
 http://localhost:19007
 ```
+
+## ربط Supabase
+
+تم تجهيز أساس قاعدة بيانات مشترك للموقع وإضافة Chrome داخل مجلد `supabase`.
+
+### ما تغطيه القاعدة
+
+- الحسابات والملفات الشخصية.
+- الخطط والاشتراكات والتحقق من صلاحية الوصول.
+- الأجهزة المرتبطة وإعدادات الإضافة.
+- فهرس المناهج والكتب.
+- تحاضير الدروس وسجل التوليد الذكي.
+- الفصول والطلاب.
+- الحضور والغياب والمشاركة.
+- الواجبات والأسئلة والتسليم والتصحيح.
+- أوراق العمل التفاعلية.
+- توزيع المنهج على الأسابيع.
+- سجل التصدير ومهام المزامنة مع المنصات.
+- سجل النشاط للمراجعة والدعم.
+
+### خطوات الإعداد لأول مرة
+
+1. أنشئ مشروعاً جديداً في [Supabase](https://supabase.com/dashboard).
+2. افتح `SQL Editor` وشغل ملفات الترحيل بالترتيب:
+   - `supabase/migrations/202606020001_initial_tahder_schema.sql`
+   - `supabase/migrations/202606020002_application_modules.sql`
+   - `supabase/migrations/202606020003_data_api_grants.sql`
+   - `supabase/migrations/202606020004_curriculum_library.sql`
+3. من `Project Settings > API Keys` انسخ:
+   - رابط المشروع.
+   - `Publishable key` العام فقط.
+4. ضع الرابط والمفتاح العام في الملفين:
+   - `extension/config.js`
+   - `extension-site/config.js`
+5. لا تضع `Secret key` أو `service_role` داخل الموقع أو الإضافة نهائياً.
+6. أنشئ مستخدماً تجريبياً من `Authentication > Users`.
+7. انسخ رقم المستخدم وأضف له اشتراك تجربة من `SQL Editor`:
+
+```sql
+insert into public.subscriptions (user_id, plan_id, status, ends_at)
+values ('USER_UUID', 'trial', 'trial', now() + interval '7 days');
+```
+
+### تشغيل التوليد الذكي
+
+نقطة التوليد موجودة في `supabase/functions/generate-preparation`. يجب نشرها كـ Edge Function وإضافة الأسرار من لوحة Supabase أو CLI:
+
+```bash
+supabase secrets set OPENAI_API_KEY=YOUR_OPENAI_KEY
+supabase secrets set OPENAI_MODEL=gpt-5-mini
+supabase functions deploy generate-preparation
+```
+
+مفتاح OpenAI يبقى في الخادم فقط ولا يصل إلى إضافة Chrome أو الموقع.
+
+### وضع العرض المحلي
+
+إذا كانت ملفات `config.js` فارغة، تستمر صفحات `localhost` في وضع demo لتطوير الواجهة. عند إضافة بيانات Supabase يصبح تسجيل الدخول والتحقق من الاشتراك حقيقياً تلقائياً.
+
+### مكتبة الكتب والمناهج
+
+ضع الكتب والأدلة داخل:
+
+```text
+curriculum-library/files
+```
+
+وعدّل الفهرس:
+
+```text
+curriculum-library/catalog.json
+```
+
+بعد استبدال أي كتاب شغّل:
+
+```powershell
+$env:SUPABASE_URL='https://YOUR_PROJECT.supabase.co'
+$env:SUPABASE_SERVICE_ROLE_KEY='YOUR_SERVER_ONLY_KEY'
+npm run curriculum:sync
+Remove-Item Env:SUPABASE_SERVICE_ROLE_KEY
+```
+
+يستخدم مفتاح الخادم في جلسة الرفع فقط ولا يوضع داخل الإكستنشن أو الموقع.

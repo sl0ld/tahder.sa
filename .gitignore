@@ -10,5 +10,12 @@ node_modules/
 dist/
 web-build/
 
+# Curriculum PDFs are managed locally and uploaded to private Supabase Storage.
+curriculum-library/**/*.pdf
+curriculum-library/**/*.doc
+curriculum-library/**/*.docx
+curriculum-library/**/*.ppt
+curriculum-library/**/*.pptx
+
 .DS_Store
 Thumbs.db

@@ -1,0 +1,5 @@
+project_id = "tahder"
+
+[functions.generate-preparation]
+verify_jwt = true
+

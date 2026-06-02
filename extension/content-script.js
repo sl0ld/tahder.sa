@@ -2,6 +2,7 @@
   const assistantId = 'tahder-madrasati-assistant';
   const storageKey = 'tahder-saved-prep';
   const sessionKey = 'tahder-extension-session';
+  const positionKey = 'tahder-extension-position';
 
   if (document.getElementById(assistantId)) {
     return;
@@ -30,7 +31,7 @@
   ];
 
   let activePrep = { ...defaultPrep };
-  let session = readSession();
+  let session = globalThis.TahderSupabase?.isConfigured() ? null : readSession();
 
   function readSession() {
     const stored = localStorage.getItem(sessionKey);
@@ -87,18 +88,57 @@
     return true;
   }
 
-  function updateStatus(text, tone = 'ready') {
-    const status = document.querySelector(`#${assistantId} .tahder-status`);
+  function isPrepPageDetected() {
+    return fieldDefinitions.some((field) => findFieldByHints(field.hints));
+  }
 
-    if (!status) {
+  function updateStatus(text, tone = 'ready') {
+    const action = document.querySelector(`#${assistantId} .tahder-primary-action[data-action="autofill"]`);
+
+    if (!action) {
       return;
     }
 
-    status.textContent = text;
-    status.dataset.tone = tone;
+    action.textContent = text;
+    action.dataset.tone = tone;
   }
 
-  function autofillPrep() {
+  function updateLoginStatus(text) {
+    const action = root.querySelector('.tahder-login-form .tahder-primary-action');
+
+    if (action) {
+      action.textContent = text;
+    }
+  }
+
+  function isBackendConfigured() {
+    return Boolean(globalThis.TahderSupabase?.isConfigured());
+  }
+
+  function getLessonContext() {
+    return {
+      lesson_title: detectLessonTitle(),
+      source_url: location.href,
+    };
+  }
+
+  async function autofillPrep() {
+    if (!isPrepPageDetected()) {
+      updateStatus('لم يتم اكتشاف صفحة التحضير', 'warn');
+      return;
+    }
+
+    if (isBackendConfigured() && session?.authSession) {
+      try {
+        updateStatus('جاري تجهيز التحضير بالذكاء الاصطناعي...');
+        const generated = await globalThis.TahderSupabase.generatePreparation(session.authSession, getLessonContext());
+        activePrep = { ...activePrep, ...generated.content };
+      } catch (error) {
+        updateStatus(error.message, 'warn');
+        return;
+      }
+    }
+
     const filled = fieldDefinitions.filter((field) =>
       fillField(findFieldByHints(field.hints), activePrep[field.key]),
     );
@@ -106,9 +146,21 @@
     updateStatus(`تمت تعبئة ${filled.length} من ${fieldDefinitions.length} حقول`, filled.length ? 'success' : 'warn');
   }
 
-  function savePrep() {
+  async function savePrep() {
     localStorage.setItem(storageKey, JSON.stringify(activePrep));
-    updateStatus('تم حفظ التحضير في البنك المحلي', 'success');
+
+    if (isBackendConfigured() && session?.authSession) {
+      try {
+        await globalThis.TahderSupabase.savePreparation(session.authSession, getLessonContext(), activePrep);
+        updateStatus('تم حفظ التحضير في حسابك', 'success');
+        return;
+      } catch (error) {
+        updateStatus(error.message, 'warn');
+        return;
+      }
+    }
+
+    updateStatus('تم حفظ التحضير محلياً', 'success');
   }
 
   function importPrep() {
@@ -161,6 +213,92 @@
     return match || 'الدرس المحدد في مدرستي';
   }
 
+  function openSection(section) {
+    const panel = root.querySelector('.tahder-full-panel');
+
+    if (!panel || !section) {
+      return;
+    }
+
+    root.querySelectorAll('.tahder-section').forEach((item) => {
+      item.open = item === section;
+    });
+    panel.dataset.view = 'section';
+    panel.querySelector('.tahder-page-title').textContent = section.dataset.title;
+  }
+
+  function closeSection() {
+    const panel = root.querySelector('.tahder-full-panel');
+
+    if (!panel) {
+      return;
+    }
+
+    root.querySelectorAll('.tahder-section').forEach((section) => {
+      section.open = false;
+    });
+    panel.dataset.view = 'home';
+  }
+
+  function readPosition() {
+    const stored = localStorage.getItem(positionKey);
+
+    return stored ? JSON.parse(stored) : null;
+  }
+
+  function applyPosition(position) {
+    if (!position) {
+      return;
+    }
+
+    root.style.left = `${Math.max(0, Math.min(position.left, window.innerWidth - root.offsetWidth))}px`;
+    root.style.top = `${Math.max(0, Math.min(position.top, window.innerHeight - root.offsetHeight))}px`;
+    root.style.bottom = 'auto';
+  }
+
+  function enableDragging() {
+    const header = root.querySelector('.tahder-toolbar-header');
+
+    if (!header) {
+      return;
+    }
+
+    header.addEventListener('pointerdown', (event) => {
+      if (event.target.closest('button')) {
+        return;
+      }
+
+      event.preventDefault();
+      const rect = root.getBoundingClientRect();
+      const startX = event.clientX;
+      const startY = event.clientY;
+      const startLeft = rect.left;
+      const startTop = rect.top;
+
+      root.classList.add('tahder-dragging');
+
+      const move = (moveEvent) => {
+        applyPosition({
+          left: startLeft + moveEvent.clientX - startX,
+          top: startTop + moveEvent.clientY - startY,
+        });
+      };
+
+      const stop = () => {
+        document.removeEventListener('pointermove', move);
+        document.removeEventListener('pointerup', stop);
+        document.removeEventListener('pointercancel', stop);
+        root.classList.remove('tahder-dragging');
+        const current = root.getBoundingClientRect();
+        localStorage.setItem(positionKey, JSON.stringify({ left: current.left, top: current.top }));
+      };
+
+      document.addEventListener('pointermove', move);
+      document.addEventListener('pointerup', stop);
+      document.addEventListener('pointercancel', stop);
+    });
+  }
+
   const root = document.createElement('div');
   root.id = assistantId;
   root.dir = 'rtl';
@@ -189,16 +327,17 @@
               <input name="password" type="password" placeholder="••••••••" required>
             </label>
             <button class="tahder-primary-action" type="submit">تسجيل الدخول</button>
-            <small class="tahder-login-note">نسخة تجريبية: استخدم أي بريد وكلمة مرور.</small>
+            <small class="tahder-login-note">${isBackendConfigured() ? 'سجل الدخول بحساب تحضيري ذي اشتراك فعال.' : 'نسخة تجريبية: استخدم أي بريد وكلمة مرور.'}</small>
           </form>
         </aside>
       `;
 
+      enableDragging();
       return;
     }
 
     root.innerHTML = `
-      <aside class="tahder-toolbar tahder-full-panel">
+      <aside class="tahder-toolbar tahder-full-panel" data-view="home">
         <header class="tahder-toolbar-header">
           <div class="tahder-brand-row">
             <span class="tahder-brand-mark">ت</span>
@@ -212,12 +351,15 @@
 
         <div class="tahder-subscription-row">
           <span>${session.email}</span>
-          <b>اشتراك فعال</b>
+          <b>${session.subscription === 'active' ? 'اشتراك فعال' : 'نسخة تجريبية'}</b>
         </div>
-        <div class="tahder-status" data-tone="ready">تم اكتشاف صفحة التحضير</div>
-        <button class="tahder-primary-action" data-action="autofill" type="button">تعبئة التحضير تلقائياً</button>
+        <div class="tahder-page-bar">
+          <button class="tahder-back-button" data-action="back" type="button">‹ عودة</button>
+          <strong class="tahder-page-title"></strong>
+        </div>
+        <button class="tahder-primary-action" data-action="autofill" data-tone="ready" type="button">${isPrepPageDetected() ? 'تعبئة التحضير تلقائياً' : 'تشغيل الإضافة'}</button>
 
-        <details class="tahder-section" open>
+        <details class="tahder-section" data-title="التحضير الشامل">
           <summary>التحضير الشامل <span>+</span></summary>
           <div class="tahder-section-body tahder-grid">
             <button data-action="autofill" type="button">تعبئة الحصة الحالية</button>
@@ -228,7 +370,7 @@
           </div>
         </details>
 
-        <details class="tahder-section">
+        <details class="tahder-section" data-title="تعديل وبنك ومشاركة">
           <summary>تعديل وبنك ومشاركة <span>+</span></summary>
           <div class="tahder-section-body">
             <div class="tahder-editor">${createEditor()}</div>
@@ -236,7 +378,7 @@
           </div>
         </details>
 
-        <details class="tahder-section">
+        <details class="tahder-section" data-title="الواجبات والإثراءات">
           <summary>الواجبات والإثراءات <span>+</span></summary>
           <div class="tahder-section-body tahder-grid">
             <button data-action="assignment" type="button">إضافة الواجب</button>
@@ -245,7 +387,7 @@
           </div>
         </details>
 
-        <details class="tahder-section">
+        <details class="tahder-section" data-title="تقاريري وخطة الإنجاز">
           <summary>تقاريري وخطة الإنجاز <span>+</span></summary>
           <div class="tahder-section-body tahder-grid">
             <button data-action="report" type="button">كشف التحضير</button>
@@ -257,11 +399,12 @@
         <footer class="tahder-footer">نسخة تجريبية محلية · لا ترسل بيانات الدخول</footer>
       </aside>
     `;
+    enableDragging();
   }
 
   renderAssistant();
 
-  root.addEventListener('submit', (event) => {
+  root.addEventListener('submit', async (event) => {
     event.preventDefault();
     const form = event.target.closest('.tahder-login-form');
 
@@ -270,16 +413,46 @@
     }
 
     const formData = new FormData(form);
-    session = {
-      email: String(formData.get('email') || ''),
-      subscription: 'active',
-    };
-    localStorage.setItem(sessionKey, JSON.stringify(session));
-    renderAssistant();
-    updateStatus('تم تسجيل الدخول والتحقق من الاشتراك', 'success');
+    const email = String(formData.get('email') || '');
+    const password = String(formData.get('password') || '');
+
+    try {
+      if (isBackendConfigured()) {
+        updateLoginStatus('جاري التحقق...');
+        const authSession = await globalThis.TahderSupabase.signIn(email, password);
+        const subscription = await globalThis.TahderSupabase.getActiveSubscription(authSession);
+
+        if (!subscription) {
+          await globalThis.TahderSupabase.signOut();
+          throw new Error('لا يوجد اشتراك فعال لهذا الحساب');
+        }
+
+        session = { email, subscription: 'active', authSession };
+        await globalThis.TahderSupabase.registerDevice(authSession);
+        await globalThis.TahderSupabase.recordActivity(authSession, 'extension_login');
+      } else if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+        session = { email, subscription: 'demo' };
+      } else {
+        throw new Error('لم يتم ربط الإضافة بقاعدة البيانات بعد');
+      }
+
+      localStorage.setItem(sessionKey, JSON.stringify(session));
+      renderAssistant();
+      updateStatus('تم تسجيل الدخول والتحقق من الاشتراك', 'success');
+    } catch (error) {
+      updateLoginStatus(error.message);
+    }
   });
 
-  root.addEventListener('click', (event) => {
+  root.addEventListener('click', async (event) => {
+    const summary = event.target.closest('.tahder-section summary');
+
+    if (summary) {
+      event.preventDefault();
+      openSection(summary.closest('.tahder-section'));
+      return;
+    }
+
     const action = event.target.closest('[data-action]')?.dataset.action;
 
     if (!action) {
@@ -287,19 +460,27 @@
     }
 
     if (action === 'signout') {
+      if (isBackendConfigured()) {
+        await globalThis.TahderSupabase.signOut();
+      }
       localStorage.removeItem(sessionKey);
       session = null;
       renderAssistant();
       return;
     }
 
-    if (!session || session.subscription !== 'active') {
+    if (action === 'back') {
+      closeSection();
+      return;
+    }
+
+    if (!session || !['active', 'demo'].includes(session.subscription) || (isBackendConfigured() && !session.authSession)) {
       updateStatus('سجل الدخول باشتراك فعال للمتابعة', 'warn');
       return;
     }
 
-    if (action === 'autofill') autofillPrep();
-    if (action === 'save') savePrep();
+    if (action === 'autofill') await autofillPrep();
+    if (action === 'save') await savePrep();
     if (action === 'import') importPrep();
     if (action === 'week') prepareWeek();
     if (action === 'classes') copyToClasses();
@@ -319,6 +500,29 @@
   });
 
   document.documentElement.appendChild(root);
+  applyPosition(readPosition());
+  if (isBackendConfigured()) {
+    globalThis.TahderSupabase.restoreSession().then(async (authSession) => {
+      if (!authSession) {
+        session = null;
+        localStorage.removeItem(sessionKey);
+        renderAssistant();
+        return;
+      }
+
+      const subscription = await globalThis.TahderSupabase.getActiveSubscription(authSession);
+      session = {
+        email: authSession.user.email,
+        subscription: subscription ? 'active' : 'inactive',
+        authSession,
+      };
+      localStorage.setItem(sessionKey, JSON.stringify(session));
+      renderAssistant();
+    }).catch(() => {
+      session = null;
+      renderAssistant();
+    });
+  }
   document.documentElement.dataset.tahderExtension = 'active';
   console.info('[Tahder] Extension active on', window.location.href);
 })();
