@@ -7,7 +7,7 @@ export const teacherProfile = {
 
 export const daySummary = [
   { label: 'التحاضير', value: '5/6', tone: 'primary' as const },
-  { label: 'الحضور', value: '3/6', tone: 'teal' as const },
+  { label: 'الواجبات', value: '3/6', tone: 'teal' as const },
   { label: 'مهام عاجلة', value: '4', tone: 'amber' as const },
 ];
 
@@ -70,9 +70,9 @@ export const priorityTasks = [
     tone: 'rose' as const,
   },
   {
-    title: 'رصد غياب الحصة الثانية',
+    title: 'تجهيز واجب الحصة الثانية',
     meta: 'الرياضيات - الثاني ب',
-    target: 'attendance',
+    target: 'content',
     tone: 'amber' as const,
   },
   {
@@ -85,7 +85,6 @@ export const priorityTasks = [
 
 export const quickActions = [
   { title: 'التحضير', meta: 'درس جديد', target: 'prep', tone: 'primary' as const },
-  { title: 'الحضور', meta: 'حضور ومشاركة', target: 'attendance', tone: 'teal' as const },
   { title: 'المحتوى', meta: 'اختبار أو PDF', target: 'content', tone: 'amber' as const },
   { title: 'المنهج', meta: 'توزيع أسبوعي', target: 'schedule', tone: 'primary' as const },
   { title: 'التقارير', meta: 'كشف أو ملف إنجاز', target: 'reports', tone: 'rose' as const },
@@ -365,81 +364,17 @@ export const submissionStatus = [
   { name: 'ريم عبدالله', status: 'سلّمت', score: '4/5', tone: 'teal' as const },
 ];
 
-export const attendanceSession = {
-  className: 'الثاني - ب',
-  subject: 'الرياضيات',
-  lesson: 'الجمع ضمن 100',
-  time: '08:15',
-  syncState: 'محفوظ محلياً',
-};
-
-export const attendanceSummary = [
-  { label: 'حاضر', value: '24', tone: 'teal' as const },
-  { label: 'غائب', value: '2', tone: 'rose' as const },
-  { label: 'مشارك', value: '11', tone: 'primary' as const },
-];
-
-export const attendanceStudents = [
-  {
-    name: 'أحمد خالد',
-    role: 'الثاني - ب',
-    avatar: 'أح',
-    attendance: 'حاضر',
-    participation: 'مشارك',
-    homework: 'مكتمل',
-    note: 'حل المسألة اللفظية أمام المجموعة.',
-    tone: 'teal' as const,
-  },
-  {
-    name: 'سارة محمد',
-    role: 'الثاني - ب',
-    avatar: 'سـ',
-    attendance: 'حاضر',
-    participation: 'متابعة',
-    homework: 'قيد الحل',
-    note: 'تحتاج تدريباً على إعادة التجميع.',
-    tone: 'amber' as const,
-  },
-  {
-    name: 'خالد يوسف',
-    role: 'الثاني - ب',
-    avatar: 'خـ',
-    attendance: 'غائب',
-    participation: 'لم يرصد',
-    homework: 'لم يفتح',
-    note: 'تظهر في تقرير الغياب اليومي.',
-    tone: 'rose' as const,
-  },
-  {
-    name: 'ريم عبدالله',
-    role: 'الثاني - ب',
-    avatar: 'رع',
-    attendance: 'حاضر',
-    participation: 'مشاركة عالية',
-    homework: 'مكتمل',
-    note: 'أجابت بدقة على سؤال الخروج.',
-    tone: 'teal' as const,
-  },
-];
-
-export const attendanceQuickMarks = [
-  { label: 'حاضر', icon: 'check-circle-outline', tone: 'teal' as const },
-  { label: 'غائب', icon: 'close-circle-outline', tone: 'rose' as const },
-  { label: 'مشارك', icon: 'hand-back-right-outline', tone: 'primary' as const },
-  { label: 'تأخر', icon: 'clock-alert-outline', tone: 'amber' as const },
-];
-
 export const madrastiPrepRequest = {
   subject: 'الرياضيات',
   grade: 'الصف الثاني',
   unit: 'الوحدة الخامسة: الأعداد والعمليات',
   lesson: 'الجمع ضمن 100',
-  classType: 'حضوري',
+  classType: 'مباشر',
   date: 'الأحد 18 شعبان',
 };
 
 export const madrastiClassTypes = [
-  { label: 'حضوري', tone: 'primary' as const },
+  { label: 'مباشر', tone: 'primary' as const },
   { label: 'عن بعد', tone: 'teal' as const },
   { label: 'علاجية', tone: 'amber' as const },
   { label: 'إثرائية', tone: 'rose' as const },

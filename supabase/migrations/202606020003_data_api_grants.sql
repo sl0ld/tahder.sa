@@ -15,8 +15,6 @@ grant select, insert, update, delete on public.educational_contexts to authentic
 grant select, insert, update, delete on public.teacher_classes to authenticated;
 grant select, insert, update, delete on public.students to authenticated;
 grant select, insert, update, delete on public.class_students to authenticated;
-grant select, insert, update, delete on public.attendance_sessions to authenticated;
-grant select, insert, update, delete on public.attendance_entries to authenticated;
 grant select, insert, update, delete on public.assignments to authenticated;
 grant select, insert, update, delete on public.assignment_questions to authenticated;
 grant select, insert, update, delete on public.assignment_submissions to authenticated;
@@ -26,4 +24,3 @@ grant select, insert on public.export_logs to authenticated;
 grant select, insert, update, delete on public.sync_jobs to authenticated;
 
 grant usage, select on all sequences in schema public to authenticated;
-

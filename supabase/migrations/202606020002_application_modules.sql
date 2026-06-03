@@ -38,28 +38,6 @@ create table public.class_students (
   primary key (class_id, student_id)
 );
 
-create table public.attendance_sessions (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  class_id uuid not null references public.teacher_classes(id) on delete cascade,
-  lesson_title text,
-  session_date date not null default current_date,
-  local_sync_id text,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create table public.attendance_entries (
-  user_id uuid not null references auth.users(id) on delete cascade,
-  session_id uuid not null references public.attendance_sessions(id) on delete cascade,
-  student_id uuid not null references public.students(id) on delete cascade,
-  attendance_status text not null default 'present' check (attendance_status in ('present', 'absent', 'late', 'excused')),
-  participation_points integer not null default 0,
-  note text,
-  updated_at timestamptz not null default now(),
-  primary key (session_id, student_id)
-);
-
 create table public.assignments (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -151,7 +129,6 @@ create table public.sync_jobs (
 
 create index teacher_classes_user_idx on public.teacher_classes (user_id);
 create index students_user_idx on public.students (user_id);
-create index attendance_sessions_user_date_idx on public.attendance_sessions (user_id, session_date desc);
 create index assignments_user_created_idx on public.assignments (user_id, created_at desc);
 create index curriculum_distributions_context_idx on public.curriculum_distributions (educational_context_id, week_number);
 create index sync_jobs_user_status_idx on public.sync_jobs (user_id, status, created_at);
@@ -159,7 +136,6 @@ create index sync_jobs_user_status_idx on public.sync_jobs (user_id, status, cre
 create trigger educational_contexts_set_updated_at before update on public.educational_contexts for each row execute function public.set_updated_at();
 create trigger teacher_classes_set_updated_at before update on public.teacher_classes for each row execute function public.set_updated_at();
 create trigger students_set_updated_at before update on public.students for each row execute function public.set_updated_at();
-create trigger attendance_sessions_set_updated_at before update on public.attendance_sessions for each row execute function public.set_updated_at();
 create trigger assignments_set_updated_at before update on public.assignments for each row execute function public.set_updated_at();
 create trigger worksheets_set_updated_at before update on public.worksheets for each row execute function public.set_updated_at();
 create trigger curriculum_distributions_set_updated_at before update on public.curriculum_distributions for each row execute function public.set_updated_at();
@@ -169,8 +145,6 @@ alter table public.educational_contexts enable row level security;
 alter table public.teacher_classes enable row level security;
 alter table public.students enable row level security;
 alter table public.class_students enable row level security;
-alter table public.attendance_sessions enable row level security;
-alter table public.attendance_entries enable row level security;
 alter table public.assignments enable row level security;
 alter table public.assignment_questions enable row level security;
 alter table public.assignment_submissions enable row level security;
@@ -185,7 +159,7 @@ declare
 begin
   foreach table_name in array array[
     'educational_contexts', 'teacher_classes', 'students', 'class_students',
-    'attendance_sessions', 'attendance_entries', 'assignments', 'assignment_questions',
+    'assignments', 'assignment_questions',
     'assignment_submissions', 'worksheets', 'curriculum_distributions', 'export_logs', 'sync_jobs'
   ]
   loop
@@ -210,4 +184,3 @@ create policy "teachers can manage their upload folder"
 on storage.objects for all to authenticated
 using (bucket_id = 'teacher-uploads' and (storage.foldername(name))[1] = (select auth.uid())::text)
 with check (bucket_id = 'teacher-uploads' and (storage.foldername(name))[1] = (select auth.uid())::text);
-

@@ -1,9 +1,7 @@
 import React from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import {
-  Animated,
   FlatList,
-  PanResponder,
   Pressable,
   StyleSheet,
   Text,
@@ -185,68 +183,6 @@ export function ProgressBar({ value, accent = 'primary' }: ProgressProps) {
   );
 }
 
-export function SwipeAttendanceRow({
-  name,
-  role,
-  avatar,
-}: {
-  name: string;
-  role: string;
-  avatar: string;
-}) {
-  const translateX = React.useRef(new Animated.Value(0)).current;
-  const [status, setStatus] = React.useState<'حاضر' | 'غائب' | 'مشارك'>('حاضر');
-
-  const panResponder = React.useMemo(
-    () =>
-      PanResponder.create({
-        onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 12,
-        onPanResponderMove: (_, gesture) => {
-          translateX.setValue(Math.max(-120, Math.min(120, gesture.dx)));
-        },
-        onPanResponderRelease: (_, gesture) => {
-          if (gesture.dx > 70) {
-            setStatus('غائب');
-          } else if (gesture.dx < -70) {
-            setStatus('مشارك');
-          }
-          Animated.spring(translateX, {
-            toValue: 0,
-            useNativeDriver: true,
-            bounciness: 8,
-          }).start();
-        },
-      }),
-    [translateX],
-  );
-
-  const statusTone = status === 'غائب' ? 'rose' : status === 'مشارك' ? 'teal' : 'primary';
-
-  return (
-    <View style={styles.swipeShell}>
-      <View style={[styles.swipeAction, styles.swipeActionLeft]}>
-        <Text style={styles.swipeActionLabel}>مشارك</Text>
-      </View>
-      <View style={[styles.swipeAction, styles.swipeActionRight]}>
-        <Text style={styles.swipeActionLabel}>غائب</Text>
-      </View>
-      <Animated.View
-        {...panResponder.panHandlers}
-        style={[styles.swipeCard, { transform: [{ translateX }] }]}
-      >
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{avatar}</Text>
-        </View>
-        <View style={styles.swipeBody}>
-          <Text style={styles.swipeName}>{name}</Text>
-          <Text style={styles.swipeRole}>{role}</Text>
-        </View>
-        <Pill label={status} tone={statusTone} />
-      </Animated.View>
-    </View>
-  );
-}
-
 export function GhostDivider() {
   return <View style={styles.divider} />;
 }
@@ -274,19 +210,6 @@ const floatingSurface = Platform.select({
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 6 },
     elevation: 4,
-  },
-});
-
-const swipeRaisedSurface = Platform.select({
-  web: {
-    boxShadow: '0 8px 18px rgba(13, 38, 76, 0.10)',
-  },
-  default: {
-    shadowColor: theme.colors.shadow,
-    shadowOpacity: 1,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 3,
   },
 });
 
@@ -497,73 +420,6 @@ const styles = StyleSheet.create({
   progressFill: {
     height: '100%',
     borderRadius: 999,
-  },
-  swipeShell: {
-    position: 'relative',
-    marginBottom: 12,
-  },
-  swipeAction: {
-    position: 'absolute',
-    top: 6,
-    bottom: 6,
-    width: '40%',
-    borderRadius: 18,
-    justifyContent: 'center',
-    paddingHorizontal: 18,
-  },
-  swipeActionLeft: {
-    right: 0,
-    backgroundColor: theme.colors.tealSoft,
-    alignItems: 'flex-start',
-  },
-  swipeActionRight: {
-    left: 0,
-    backgroundColor: theme.colors.roseSoft,
-    alignItems: 'flex-end',
-  },
-  swipeActionLabel: {
-    color: theme.colors.muted,
-    fontWeight: '800',
-    opacity: 0.55,
-    fontSize: 12,
-  },
-  swipeCard: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: theme.colors.line,
-    padding: 14,
-    ...swipeRaisedSurface,
-  },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: theme.colors.primarySoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    color: theme.colors.primary,
-    fontWeight: '900',
-  },
-  swipeBody: {
-    flex: 1,
-    marginRight: 12,
-  },
-  swipeName: {
-    color: theme.colors.text,
-    fontSize: 15,
-    fontWeight: '800',
-    textAlign: 'right',
-  },
-  swipeRole: {
-    color: theme.colors.muted,
-    fontSize: 12,
-    marginTop: 2,
-    textAlign: 'right',
   },
   divider: {
     height: 1,

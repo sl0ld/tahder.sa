@@ -7,7 +7,6 @@ import {
   View,
 } from 'react-native';
 import {
-  AttendanceScreen,
   ContentScreen,
   HomeScreen,
   LessonPrepScreen,
@@ -42,8 +41,6 @@ export default function App() {
         return <PlatformBrowserScreen platform="madrasati" />;
       case 'noor':
         return <PlatformBrowserScreen platform="noor" />;
-      case 'attendance':
-        return <AttendanceScreen />;
       case 'content':
         return <ContentScreen />;
       case 'schedule':

@@ -10,14 +10,10 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Button, Card, GhostDivider, Pill, ProgressBar, SectionTitle, StatCard, SwipeAttendanceRow } from './ui';
+import { Button, Card, GhostDivider, Pill, ProgressBar, SectionTitle, StatCard } from './ui';
 import { theme } from './theme';
 import {
   activitySummary,
-  attendanceQuickMarks,
-  attendanceSession,
-  attendanceStudents,
-  attendanceSummary,
   daySummary,
   linkedAssignment,
   madrastiClassTypes,
@@ -354,7 +350,7 @@ export function HomeScreen({ onJumpTo }: HomeScreenProps) {
 
         <View style={styles.todayActions}>
           <Button label="تحضير الحصة" compact onPress={() => onJumpTo('prep')} />
-          <Button label="رصد الفصل" compact secondary onPress={() => onJumpTo('attendance')} />
+          <Button label="تجهيز واجب" compact secondary onPress={() => onJumpTo('content')} />
         </View>
       </View>
 
@@ -500,7 +496,7 @@ function getClassTypeNote(classType: string) {
     return 'تم رفع مستوى التحدي';
   }
 
-  return 'جاهز للحصة الحضورية';
+  return 'جاهز للحصة المباشرة';
 }
 
 function getMadrastiStepStatuses({
@@ -1297,75 +1293,6 @@ function SubmissionRow({
   );
 }
 
-function AttendanceStudentCard({
-  student,
-}: {
-  student: (typeof attendanceStudents)[number];
-}) {
-  return (
-    <Card style={styles.attendanceStudentCard}>
-      <SwipeAttendanceRow name={student.name} role={student.role} avatar={student.avatar} />
-      <View style={styles.studentSignals}>
-        <Pill label={student.attendance} tone={student.tone} />
-        <Pill label={student.participation} tone={student.tone === 'rose' ? 'muted' : 'primary'} />
-        <Pill label={student.homework} tone={student.homework === 'مكتمل' ? 'teal' : 'amber'} />
-      </View>
-      <View style={styles.studentNote}>
-        <MaterialCommunityIcons name="note-text-outline" size={18} color={theme.colors.primary} />
-        <Text style={styles.studentNoteText}>{student.note}</Text>
-      </View>
-    </Card>
-  );
-}
-
-export function AttendanceScreen() {
-  return (
-    <ScrollView contentContainerStyle={styles.page}>
-      <View style={styles.attendancePanel}>
-        <View style={styles.attendancePanelTop}>
-          <View style={styles.attendanceCopy}>
-            <Text style={styles.eyebrow}>متابعة الحصة</Text>
-            <Text style={styles.attendanceTitle}>
-              {attendanceSession.subject} · {attendanceSession.className}
-            </Text>
-            <Text style={styles.attendanceMeta}>
-              {attendanceSession.lesson} · {attendanceSession.time}
-            </Text>
-          </View>
-          <Pill label={attendanceSession.syncState} tone="amber" />
-        </View>
-        <ProgressBar value={82} accent="teal" />
-        <Text style={styles.progressText}>تم رصد 82% من الفصل، وسيتم التزامن عند توفر الاتصال.</Text>
-      </View>
-
-      <View style={styles.summaryGrid}>
-        {attendanceSummary.map((item) => (
-          <StatCard key={item.label} label={item.label} value={item.value} accent={item.tone} />
-        ))}
-      </View>
-
-      <SectionTitle title="رصد سريع" actionLabel="حفظ ومزامنة" />
-      <View style={styles.quickMarkGrid}>
-        {attendanceQuickMarks.map((mark) => (
-          <Pressable key={mark.label} style={[styles.quickMarkButton, quickToneStyles[mark.tone]]}>
-            <MaterialCommunityIcons
-              name={mark.icon as keyof typeof MaterialCommunityIcons.glyphMap}
-              size={22}
-              color={quickColorByTone[mark.tone]}
-            />
-            <Text style={styles.quickMarkText}>{mark.label}</Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <SectionTitle title="قائمة الطلاب" actionLabel="فرز حسب الحالة" />
-      {attendanceStudents.map((student) => (
-        <AttendanceStudentCard key={student.name} student={student} />
-      ))}
-    </ScrollView>
-  );
-}
-
 export function ContentScreen() {
   return (
     <ScrollView contentContainerStyle={styles.page}>
@@ -1457,13 +1384,13 @@ export function ReportsScreen() {
         <SectionTitle title="التقارير والتصدير" actionLabel="تصدير PDF" />
         <Text style={styles.reportHeadline}>تقرير الفصل جاهز مع ملخص سريع</Text>
         <Text style={styles.screenLead}>
-          استخرج كشوف الأداء والغياب والمشاركة مباشرة إلى ملفات قابلة للمشاركة.
+          استخرج كشوف الأداء والواجبات والتحضير مباشرة إلى ملفات قابلة للمشاركة.
         </Text>
         <ProgressBar value={91} accent="primary" />
       </Card>
 
       <SectionTitle title="مخرجات جاهزة" />
-      {['كشف الدرجات', 'حضور الطلاب', 'مشاركة الفصل', 'أعمال السنة'].map((item) => (
+      {['كشف الدرجات', 'تقرير الواجبات', 'مشاركة الأنشطة', 'أعمال السنة'].map((item) => (
         <Card key={item} style={styles.reportItem}>
           <View style={styles.fileRow}>
             <Text style={styles.fileTitle}>{item}</Text>
@@ -1491,8 +1418,8 @@ export function StudentProfileScreen() {
         </View>
 
         <View style={styles.heroStats}>
-          <StatCard label="نسبة الحضور" value="95%" accent="teal" />
-          <StatCard label="التأخر" value="14+" accent="amber" />
+          <StatCard label="الواجبات" value="95%" accent="teal" />
+          <StatCard label="التحضير" value="14+" accent="amber" />
         </View>
       </Card>
 
@@ -1541,7 +1468,7 @@ function ClassRow({
   item: (typeof todayClasses)[number];
   onJumpTo: (key: string) => void;
 }) {
-  const target = item.prepStatus === 'يحتاج تحضير' ? 'prep' : item.action.includes('واجب') ? 'content' : 'attendance';
+  const target = item.prepStatus === 'يحتاج تحضير' ? 'prep' : item.action.includes('واجب') ? 'content' : 'prep';
 
   return (
     <Card style={styles.lessonCard}>
@@ -2841,58 +2768,6 @@ const styles = StyleSheet.create({
     marginTop: 3,
     textAlign: 'right',
   },
-  attendancePanel: {
-    backgroundColor: theme.colors.primaryDeep,
-    borderRadius: theme.radius.xl,
-    padding: 16,
-    gap: 13,
-  },
-  attendancePanelTop: {
-    flexDirection: 'row-reverse',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  attendanceCopy: {
-    flex: 1,
-    alignItems: 'flex-end',
-  },
-  attendanceTitle: {
-    color: '#FFFFFF',
-    fontSize: 21,
-    fontWeight: '900',
-    textAlign: 'right',
-    marginTop: 4,
-  },
-  attendanceMeta: {
-    color: '#D9E8FF',
-    fontSize: 13,
-    textAlign: 'right',
-    marginTop: 6,
-  },
-  quickMarkGrid: {
-    flexDirection: 'row-reverse',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  quickMarkButton: {
-    width: '48.5%',
-    minHeight: 62,
-    borderRadius: theme.radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-  },
-  quickMarkText: {
-    color: theme.colors.text,
-    fontSize: 12,
-    fontWeight: '900',
-    textAlign: 'center',
-  },
-  attendanceStudentCard: {
-    paddingBottom: 14,
-    gap: 10,
-  },
   studentSignals: {
     flexDirection: 'row-reverse',
     flexWrap: 'wrap',
@@ -3001,9 +2876,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'right',
     lineHeight: 20,
-  },
-  attendanceHero: {
-    gap: 12,
   },
   progressText: {
     color: theme.colors.muted,
