@@ -123,6 +123,10 @@
     ) || null;
   }
 
+  async function listPreparations(session) {
+    return request('/rest/v1/preparations?select=id,lesson_title,subject,grade,term,content,status,source,created_at&order=created_at.desc&limit=20', { session });
+  }
+
   async function savePreparation(session, lesson, content) {
     return request('/rest/v1/preparations?select=id,content,status,created_at', {
       method: 'POST',
@@ -178,6 +182,7 @@
     generatePreparation,
     getActiveSubscription,
     isConfigured,
+    listPreparations,
     recordActivity,
     registerDevice,
     restoreSession,

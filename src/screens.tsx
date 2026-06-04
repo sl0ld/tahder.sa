@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { Button, Card, GhostDivider, Pill, ProgressBar, SectionTitle, StatCard } from './ui';
 import { theme } from './theme';
+import { generatePreparation, savePreparation, type TahderPreparation } from './tahderApi';
+import { useTahderAccount, type TahderAccountState } from './useTahderAccount';
 import {
   activitySummary,
   daySummary,
@@ -56,6 +58,7 @@ type MadrastiLogItem = {
 };
 
 type PrepWorkspaceTab = 'madrasti' | 'curriculum' | 'details';
+type PrepContent = Record<string, unknown>;
 
 type CurriculumLesson = {
   id: string;
@@ -529,7 +532,59 @@ function getMadrastiStepStatuses({
   });
 }
 
+function preparationToCompact(item: TahderPreparation): MadrastiCompactItem {
+  return {
+    title: item.lesson_title,
+    meta: `${item.subject ?? 'تحضير'} · ${item.grade ?? 'بدون صف'}`,
+    status: item.source === 'mobile' ? 'محفوظ بالجوال' : 'محفوظ',
+  };
+}
+
+function lessonPayload(lesson: PrepLesson) {
+  return {
+    lesson_title: lesson.lesson,
+    subject: lesson.subject,
+    grade: lesson.grade,
+    term: lesson.term,
+    unit_title: lesson.unit,
+    class_names: [lesson.className],
+  };
+}
+
+function fieldsToPreparationContent(fields: MadrastiField[], activeClassType: string): PrepContent {
+  return {
+    platform: 'madrasati',
+    class_type: activeClassType,
+    fields: fields.map((field) => ({
+      key: field.key,
+      title: field.title,
+      quality: field.quality,
+      text: field.text,
+    })),
+  };
+}
+
+function applyGeneratedContent(fields: MadrastiField[], content: PrepContent) {
+  const generated = content as Record<string, string>;
+  const mapped: Record<string, string | undefined> = {
+    goals: generated.objectives,
+    strategies: generated.strategies,
+    resources: generated.resources,
+    closure: generated.closure,
+    homework: generated.assignment,
+    activities: generated.activities,
+    assessment: generated.hints,
+  };
+
+  return fields.map((field) => ({
+    ...field,
+    text: mapped[field.key] || field.text,
+    quality: mapped[field.key] ? 'مولد AI' : field.quality,
+  }));
+}
+
 export function LessonPrepScreen() {
+  const tahderAccount = useTahderAccount();
   const allPrepLessonOptions = React.useMemo(
     () => [...wajibatiPrepLessonOptions, ...prepLessonOptions],
     [],
@@ -549,6 +604,8 @@ export function LessonPrepScreen() {
   const [activePrepTab, setActivePrepTab] = React.useState<PrepWorkspaceTab>('madrasti');
   const [savedPreps, setSavedPreps] = React.useState<MadrastiCompactItem[]>(madrastiSavedPreps);
   const [exportLog, setExportLog] = React.useState<MadrastiLogItem[]>(madrastiExportLog);
+  const [backendBusy, setBackendBusy] = React.useState(false);
+  const [backendNotice, setBackendNotice] = React.useState('الجوال والإكستنشن يقرآن من نفس بنك التحاضير عند تسجيل الدخول.');
   const selectedPrepMeta = [
     { label: 'المرحلة', value: selectedLesson.stage },
     { label: 'الصف', value: selectedLesson.grade },
@@ -564,6 +621,12 @@ export function LessonPrepScreen() {
     setSyncState('idle');
   }, [activeClassType, generationRun, selectedLesson]);
 
+  React.useEffect(() => {
+    if (tahderAccount.preparations.length > 0) {
+      setSavedPreps(tahderAccount.preparations.map(preparationToCompact));
+    }
+  }, [tahderAccount.preparations]);
+
   const addExportLog = React.useCallback((title: string, status = 'ناجح') => {
     setExportLog((items) => [
       { title, time: 'الآن', status },
@@ -571,10 +634,30 @@ export function LessonPrepScreen() {
     ]);
   }, []);
 
-  const handleGenerate = () => {
-    setGenerationRun((run) => run + 1);
+  const handleGenerate = async () => {
+    setBackendBusy(true);
     setEditingKey(null);
-    addExportLog(`توليد مسودة AI: ${selectedLesson.lesson}`);
+
+    try {
+      if (tahderAccount.session && tahderAccount.subscription) {
+        const generated = await generatePreparation(tahderAccount.session, lessonPayload(selectedLesson));
+        setMadrastiFields((fields) => applyGeneratedContent(fields, generated.content));
+        await tahderAccount.refresh(tahderAccount.session);
+        setBackendNotice('تم التوليد عبر Supabase وحفظ التحضير في نفس بنك الجوال والإكستنشن.');
+        addExportLog(`توليد AI متصل: ${selectedLesson.lesson}`);
+        return;
+      }
+
+      setGenerationRun((run) => run + 1);
+      setBackendNotice('تم التوليد محليًا. سجل الدخول ليتم حفظه ومشاركته مع الإكستنشن.');
+      addExportLog(`توليد مسودة محلية: ${selectedLesson.lesson}`);
+    } catch (error) {
+      setGenerationRun((run) => run + 1);
+      setBackendNotice(error instanceof Error ? `تعذر توليد Supabase، تم استخدام مسودة محلية: ${error.message}` : 'تعذر توليد Supabase، تم استخدام مسودة محلية.');
+      addExportLog(`توليد محلي احتياطي: ${selectedLesson.lesson}`, 'احتياطي');
+    } finally {
+      setBackendBusy(false);
+    }
   };
 
   const handleFieldChange = (key: string, text: string) => {
@@ -634,7 +717,28 @@ export function LessonPrepScreen() {
     Linking.openURL(MADRASATI_URL);
   };
 
-  const handleSavePrep = () => {
+  const handleSavePrep = async () => {
+    setBackendBusy(true);
+
+    try {
+      if (tahderAccount.session && tahderAccount.subscription) {
+        await savePreparation(
+          tahderAccount.session,
+          lessonPayload(selectedLesson),
+          fieldsToPreparationContent(madrastiFields, activeClassType),
+          'mobile',
+        );
+        await tahderAccount.refresh(tahderAccount.session);
+        setBackendNotice('تم الحفظ في Supabase. نفس التحضير متاح الآن لنفس الحساب في الإكستنشن.');
+      } else {
+        setBackendNotice('تم الحفظ محليًا فقط. سجل الدخول ليظهر التحضير في الإكستنشن أيضًا.');
+      }
+    } catch (error) {
+      setBackendNotice(error instanceof Error ? error.message : 'تعذر حفظ التحضير في Supabase.');
+    } finally {
+      setBackendBusy(false);
+    }
+
     setSavedPreps((items) => [
       {
         title: selectedLesson.lesson,
@@ -685,6 +789,12 @@ export function LessonPrepScreen() {
       </View>
 
       <PrepWorkspaceSwitch activeTab={activePrepTab} onChangeTab={setActivePrepTab} />
+
+      <TahderConnectionCard
+        account={tahderAccount}
+        busy={backendBusy}
+        notice={backendNotice}
+      />
 
       {activePrepTab === 'curriculum' ? (
         <CurriculumDistributionTool
@@ -764,6 +874,82 @@ export function LessonPrepScreen() {
         />
       ) : null}
     </ScrollView>
+  );
+}
+
+function TahderConnectionCard({
+  account,
+  busy,
+  notice,
+}: {
+  account: TahderAccountState;
+  busy: boolean;
+  notice: string;
+}) {
+  const [email, setEmail] = React.useState('teacher.demo@tahder.sa');
+  const [password, setPassword] = React.useState('');
+  const connected = Boolean(account.session && account.subscription);
+
+  const handleLogin = async () => {
+    await account.login(email.trim(), password);
+  };
+
+  return (
+    <Card style={styles.accountBridgeCard}>
+      <View style={styles.accountBridgeHeader}>
+        <Pill
+          label={account.loading || busy ? 'جار الاتصال' : account.statusLabel}
+          tone={connected ? 'teal' : account.error ? 'rose' : 'primary'}
+        />
+        <View style={styles.accountBridgeCopy}>
+          <Text style={styles.accountBridgeTitle}>ربط الجوال مع الإكستنشن</Text>
+          <Text style={styles.accountBridgeText}>
+            {connected
+              ? `متصل كـ ${account.session?.user.email ?? 'حساب تحضيري'} · ${account.preparations.length} تحاضير من Supabase`
+              : 'سجل دخولك ليستخدم الجوال والإكستنشن نفس الاشتراك ونفس بنك التحاضير.'}
+          </Text>
+        </View>
+      </View>
+
+      {connected ? (
+        <View style={styles.accountBridgeActions}>
+          <Button label="تحديث البنك" compact secondary onPress={() => void account.refresh(account.session)} />
+          <Button label="تسجيل الخروج" compact secondary onPress={() => void account.logout()} />
+        </View>
+      ) : (
+        <View style={styles.accountBridgeForm}>
+          <TextInput
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            placeholder="البريد الإلكتروني"
+            placeholderTextColor={theme.colors.muted}
+            style={styles.accountBridgeInput}
+          />
+          <TextInput
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            placeholder="كلمة المرور"
+            placeholderTextColor={theme.colors.muted}
+            style={styles.accountBridgeInput}
+          />
+          <Button label={account.loading ? 'جاري الدخول' : 'تسجيل الدخول'} compact onPress={() => void handleLogin()} />
+        </View>
+      )}
+
+      <View style={styles.accountBridgeNotice}>
+        <MaterialCommunityIcons
+          name={connected ? 'database-check-outline' : 'database-sync-outline'}
+          size={18}
+          color={connected ? theme.colors.teal : theme.colors.primary}
+        />
+        <Text style={styles.accountBridgeNoticeText}>
+          {account.error ?? notice}
+        </Text>
+      </View>
+    </Card>
   );
 }
 
@@ -2398,6 +2584,68 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'right',
     marginTop: 3,
+  },
+  accountBridgeCard: {
+    gap: 12,
+  },
+  accountBridgeHeader: {
+    flexDirection: 'row-reverse',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  accountBridgeCopy: {
+    flex: 1,
+    alignItems: 'flex-end',
+  },
+  accountBridgeTitle: {
+    color: theme.colors.text,
+    fontSize: 15,
+    fontWeight: '900',
+    textAlign: 'right',
+  },
+  accountBridgeText: {
+    color: theme.colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 18,
+    marginTop: 5,
+    textAlign: 'right',
+  },
+  accountBridgeForm: {
+    gap: 9,
+  },
+  accountBridgeInput: {
+    minHeight: 44,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.line,
+    backgroundColor: theme.colors.surfaceAlt,
+    color: theme.colors.text,
+    fontSize: 13,
+    fontWeight: '700',
+    paddingHorizontal: 12,
+    textAlign: 'right',
+  },
+  accountBridgeActions: {
+    flexDirection: 'row-reverse',
+    gap: 9,
+  },
+  accountBridgeNotice: {
+    flexDirection: 'row-reverse',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: theme.colors.surfaceAlt,
+    borderRadius: theme.radius.md,
+    padding: 10,
+  },
+  accountBridgeNoticeText: {
+    flex: 1,
+    color: theme.colors.text,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 18,
+    textAlign: 'right',
   },
   madrastiPanel: {
     gap: 12,
