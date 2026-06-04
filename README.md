@@ -38,6 +38,20 @@ The Chrome extension demo runs from the local `extension` folder.
 
 Database migrations live in `supabase/migrations`.
 
+AI lesson generation runs through the `generate-preparation` Edge Function so
+API keys are never stored in the mobile app, website, or extension. The default
+provider is Gemini Flash:
+
+```text
+AI_PROVIDER=gemini
+GEMINI_MODEL=gemini-2.5-flash
+GEMINI_API_KEY=your-google-ai-studio-key
+TAHDER_SERVICE_ROLE_KEY=your-supabase-service-role-key
+```
+
+OpenAI can still be used later by setting `AI_PROVIDER=openai` with
+`OPENAI_API_KEY` and `OPENAI_MODEL`.
+
 The active product tables cover:
 
 - accounts and profiles

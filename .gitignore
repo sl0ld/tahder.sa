@@ -10,6 +10,7 @@ node_modules/
 dist/
 web-build/
 public-site-dist/
+supabase/.temp/
 
 # Curriculum PDFs are managed locally and uploaded to private Supabase Storage.
 curriculum-library/**/*.pdf
