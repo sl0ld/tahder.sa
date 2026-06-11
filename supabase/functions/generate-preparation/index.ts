@@ -94,7 +94,9 @@ Deno.serve(async (request) => {
     const generation = provider === 'openai'
       ? await generateWithOpenAi(model, lesson, references, teacherProfile, aiSettings)
       : await generateWithGemini(model, lesson, references, teacherProfile, aiSettings);
-    const content = generation.content;
+    const content = isPreparationAligned(generation.content, lesson)
+      ? generation.content
+      : buildFallbackPreparation(lesson, teacherProfile);
     const { data: preparation, error: preparationError } = await userClient
       .from('preparations')
       .insert({
@@ -236,6 +238,8 @@ function getArabicSystemPrompt() {
   return [
     'أنت مساعد معلم سعودي متخصص في التحضير لمنصة مدرستي.',
     'جهز تحضيراً موجزاً، عملياً، ومناسباً للمنهج السعودي الحديث.',
+    'التزم حصراً بعنوان الدرس والمادة والصف والفصل المرسلة في lesson، ولا تستبدلها بمادة أو مثال من تخصص آخر.',
+    'إذا لم تجد مرجعاً كافياً في curriculum_references فاستخدم عنوان الدرس وبيانات المعلم فقط، ولا تخترع موضوعاً غير مرتبط.',
     'اكتب بالعربية الفصحى المبسطة، واجعل كل حقل مناسباً للنسخ داخل منصة مدرستي.',
     'أعد JSON فقط، بدون شرح إضافي، واملأ جميع الحقول المطلوبة.',
   ].join(' ');
@@ -247,6 +251,11 @@ function buildGenerationPayload(
   teacherProfile: Record<string, unknown> | null,
 ) {
   return {
+    instruction: [
+      'ولد التحضير للدرس المحدد فقط.',
+      'لا تغير lesson.lesson_title ولا lesson.subject ولا lesson.grade.',
+      'اجعل كل الحقول قابلة للنسخ مباشرة في منصة مدرستي.',
+    ].join(' '),
     lesson,
     teacher_profile: teacherProfile,
     curriculum_references: references.map((reference) => ({
@@ -283,6 +292,49 @@ function getOpenAiPreparationSchema() {
 function parsePreparationJson(text: string) {
   const parsed = JSON.parse(text);
   return Object.fromEntries(fields.map((field) => [field, String(parsed[field] ?? '')]));
+}
+
+function buildFallbackPreparation(
+  lesson: Record<string, unknown>,
+  teacherProfile: Record<string, unknown> | null,
+) {
+  const lessonTitle = String(lesson.lesson_title ?? 'الدرس المحدد');
+  const subject = String(lesson.subject ?? 'المادة');
+  const grade = String(lesson.grade ?? 'الصف');
+  const schoolName = String(teacherProfile?.school_name ?? 'المدرسة');
+
+  return {
+    objectives: `أن يحدد الطالب الفكرة الرئيسة في درس ${lessonTitle}. أن يشارك في مناقشة مرتبطة بموضوع الدرس. أن يطبق مهارة من مهارات ${subject} المناسبة لطلاب ${grade}.`,
+    strategies: `التعلم النشط، الحوار والمناقشة، القراءة الموجهة، العمل الثنائي، وأسئلة التحقق السريعة أثناء عرض درس ${lessonTitle}.`,
+    resources: `الكتاب المدرسي لمادة ${subject}، منصة مدرستي، السبورة، بطاقات أسئلة قصيرة، وأمثلة مرتبطة ببيئة ${schoolName}.`,
+    closure: `تلخيص أهم ما تعلمه الطلاب في درس ${lessonTitle}، ثم سؤال ختامي سريع يقيس تحقق الهدف قبل الانتقال للواجب.`,
+    enrichment: `نشاط إثرائي قصير: يكتب الطالب مثالاً أو جملة أو فكرة جديدة مرتبطة بدرس ${lessonTitle} ويشاركها مع زملائه.`,
+    assignment: `واجب مرتبط بالدرس: حل تدريب قصير أو كتابة إجابة موجزة توضح فهم الطالب لموضوع ${lessonTitle}.`,
+    hints: `ابدأ بسؤال تمهيدي قريب من خبرات الطلاب، ثم اربط الإجابات بعنوان الدرس، واجعل التقييم تدريجياً وبسيطاً.`,
+    activities: `تهيئة قصيرة، قراءة أو عرض موجه، نشاط جماعي مصغر، مشاركة إجابات، ثم تقويم ختامي سريع.`,
+  };
+}
+
+function isPreparationAligned(content: Record<string, string>, lesson: Record<string, unknown>) {
+  const title = normalizeArabic(String(lesson.lesson_title ?? ''));
+  const subject = normalizeArabic(String(lesson.subject ?? ''));
+  const body = normalizeArabic(Object.values(content).join(' '));
+  const titleWords = title
+    .split(/\s+/)
+    .filter((word) => word.length >= 4 && !['درس', 'نص', 'نشاط'].includes(word));
+
+  if (subject && body.includes(subject)) return true;
+  if (titleWords.length === 0) return true;
+  return titleWords.some((word) => body.includes(word));
+}
+
+function normalizeArabic(value: string) {
+  return value
+    .replace(/[\u064B-\u065F\u0670]/g, '')
+    .replace(/[إأآا]/g, 'ا')
+    .replace(/ى/g, 'ي')
+    .replace(/ة/g, 'ه')
+    .toLowerCase();
 }
 
 function getErrorMessage(error: unknown) {
