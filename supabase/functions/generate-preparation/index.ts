@@ -21,6 +21,15 @@ type ReferenceRow = {
   storage_path: string;
 };
 
+type AiRuntimeSettings = {
+  provider: string;
+  model: string;
+  api_key: string | null;
+  system_prompt: string | null;
+  temperature: number | null;
+  is_enabled: boolean;
+};
+
 function extractOutputText(response: { output?: Array<{ content?: Array<{ type?: string; text?: string }> }> }) {
   return response.output
     ?.flatMap((item) => item.content ?? [])
@@ -58,15 +67,22 @@ Deno.serve(async (request) => {
 
     const lesson = await request.json();
     const references = await findReferences(adminClient, lesson);
-    const provider = Deno.env.get('AI_PROVIDER') ?? 'gemini';
-    const model = provider === 'openai'
+    const teacherProfile = await getTeacherProfile(adminClient, userId);
+    const aiSettings = await getAiRuntimeSettings(adminClient);
+    const provider = aiSettings?.provider ?? Deno.env.get('AI_PROVIDER') ?? 'gemini';
+    const model = aiSettings?.model ?? (provider === 'openai'
       ? Deno.env.get('OPENAI_MODEL') ?? defaultOpenAiModel
-      : Deno.env.get('GEMINI_MODEL') ?? defaultGeminiModel;
+      : Deno.env.get('GEMINI_MODEL') ?? defaultGeminiModel);
+
+    if (aiSettings && !aiSettings.is_enabled) {
+      throw new Error('AI generation is disabled from the admin dashboard.');
+    }
+
     const { data: log, error: logError } = await adminClient
       .from('generation_logs')
       .insert({
         user_id: userId,
-        lesson_context: { ...lesson, references: references.map((reference) => reference.id) },
+        lesson_context: { ...lesson, teacher_profile: teacherProfile, references: references.map((reference) => reference.id) },
         provider,
         model,
       })
@@ -76,8 +92,8 @@ Deno.serve(async (request) => {
     if (logError) console.error(logError);
 
     const generation = provider === 'openai'
-      ? await generateWithOpenAi(model, lesson, references)
-      : await generateWithGemini(model, lesson, references);
+      ? await generateWithOpenAi(model, lesson, references, teacherProfile, aiSettings)
+      : await generateWithGemini(model, lesson, references, teacherProfile, aiSettings);
     const content = generation.content;
     const { data: preparation, error: preparationError } = await userClient
       .from('preparations')
@@ -116,8 +132,14 @@ Deno.serve(async (request) => {
   }
 });
 
-async function generateWithGemini(model: string, lesson: Record<string, unknown>, references: ReferenceRow[]) {
-  const geminiKey = Deno.env.get('GEMINI_API_KEY');
+async function generateWithGemini(
+  model: string,
+  lesson: Record<string, unknown>,
+  references: ReferenceRow[],
+  teacherProfile: Record<string, unknown> | null,
+  aiSettings: AiRuntimeSettings | null,
+) {
+  const geminiKey = aiSettings?.api_key ?? Deno.env.get('GEMINI_API_KEY');
   if (!geminiKey) {
     throw new Error('GEMINI_API_KEY is not configured.');
   }
@@ -132,18 +154,18 @@ async function generateWithGemini(model: string, lesson: Record<string, unknown>
       },
       body: JSON.stringify({
         systemInstruction: {
-          parts: [{ text: getArabicSystemPrompt() }],
+          parts: [{ text: aiSettings?.system_prompt ?? getArabicSystemPrompt() }],
         },
         contents: [
           {
             role: 'user',
-            parts: [{ text: JSON.stringify(buildGenerationPayload(lesson, references)) }],
+            parts: [{ text: JSON.stringify(buildGenerationPayload(lesson, references, teacherProfile)) }],
           },
         ],
         generationConfig: {
           responseMimeType: 'application/json',
           responseSchema: getGeminiPreparationSchema(),
-          temperature: 0.35,
+          temperature: aiSettings?.temperature ?? 0.35,
         },
       }),
     },
@@ -165,8 +187,14 @@ async function generateWithGemini(model: string, lesson: Record<string, unknown>
   };
 }
 
-async function generateWithOpenAi(model: string, lesson: Record<string, unknown>, references: ReferenceRow[]) {
-  const openAiKey = Deno.env.get('OPENAI_API_KEY');
+async function generateWithOpenAi(
+  model: string,
+  lesson: Record<string, unknown>,
+  references: ReferenceRow[],
+  teacherProfile: Record<string, unknown> | null,
+  aiSettings: AiRuntimeSettings | null,
+) {
+  const openAiKey = aiSettings?.api_key ?? Deno.env.get('OPENAI_API_KEY');
   if (!openAiKey) {
     throw new Error('OPENAI_API_KEY is not configured.');
   }
@@ -179,8 +207,8 @@ async function generateWithOpenAi(model: string, lesson: Record<string, unknown>
     },
     body: JSON.stringify({
       model,
-      instructions: getArabicSystemPrompt(),
-      input: JSON.stringify(buildGenerationPayload(lesson, references)),
+      instructions: aiSettings?.system_prompt ?? getArabicSystemPrompt(),
+      input: JSON.stringify(buildGenerationPayload(lesson, references, teacherProfile)),
       text: {
         format: {
           type: 'json_schema',
@@ -213,9 +241,14 @@ function getArabicSystemPrompt() {
   ].join(' ');
 }
 
-function buildGenerationPayload(lesson: Record<string, unknown>, references: ReferenceRow[]) {
+function buildGenerationPayload(
+  lesson: Record<string, unknown>,
+  references: ReferenceRow[],
+  teacherProfile: Record<string, unknown> | null,
+) {
   return {
     lesson,
+    teacher_profile: teacherProfile,
     curriculum_references: references.map((reference) => ({
       title: reference.title,
       document_type: reference.document_type,
@@ -284,4 +317,34 @@ async function findReferences(adminClient: ReturnType<typeof createClient>, less
     return [];
   }
   return data ?? [];
+}
+
+async function getTeacherProfile(adminClient: ReturnType<typeof createClient>, userId: string) {
+  const { data, error } = await adminClient
+    .from('profiles')
+    .select('display_name,phone,school_name')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error(error);
+    return null;
+  }
+
+  return data ?? null;
+}
+
+async function getAiRuntimeSettings(adminClient: ReturnType<typeof createClient>) {
+  const { data, error } = await adminClient
+    .from('ai_runtime_settings')
+    .select('provider,model,api_key,system_prompt,temperature,is_enabled')
+    .eq('id', 1)
+    .maybeSingle();
+
+  if (error) {
+    console.error(error);
+    return null;
+  }
+
+  return data as AiRuntimeSettings | null;
 }
